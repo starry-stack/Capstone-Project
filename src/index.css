@@ -1,0 +1,86 @@
+/* ============================================================
+   STORY-TO-COMIC GENERATOR — Global Styles
+   Aesthetic: Vintage comic book / pulp magazine
+   Fonts: Bangers (display), Comic Neue (body), Permanent Marker (accents)
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Bangers&family=Comic+Neue:wght@400;700&family=Permanent+Marker&display=swap');
+
+:root {
+  /* Color Palette */
+  --ink: #0d0d0d;
+  --paper: #fef9e7;
+  --yellow: #ffe033;
+  --red: #e8231a;
+  --blue: #1a4fa0;
+  --sky: #b8d4f0;
+  --panel-bg: #ffffff;
+  --shadow: 5px 5px 0px var(--ink);
+  --shadow-lg: 8px 8px 0px var(--ink);
+
+  /* Typography */
+  --font-display: 'Bangers', cursive;
+  --font-body: 'Comic Neue', cursive;
+  --font-accent: 'Permanent Marker', cursive;
+
+  /* Spacing */
+  --panel-border: 3px solid var(--ink);
+  --radius: 4px;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-body);
+  background-color: var(--paper);
+  background-image:
+    radial-gradient(circle, #c8b8a0 1px, transparent 1px);
+  background-size: 20px 20px;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 10px; }
+::-webkit-scrollbar-track { background: var(--paper); }
+::-webkit-scrollbar-thumb {
+  background: var(--ink);
+  border: 2px solid var(--paper);
+}
+
+/* ── Global Button Reset ── */
+button {
+  cursor: pointer;
+  font-family: var(--font-display);
+  border: none;
+  outline: none;
+}
+
+button:active {
+  transform: translate(2px, 2px);
+}
+
+/* ── Focus Styles ── */
+:focus-visible {
+  outline: 3px solid var(--blue);
+  outline-offset: 2px;
+}
+
+/* ── Utility ── */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
