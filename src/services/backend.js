@@ -1,5 +1,6 @@
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
 const SESSION_KEY = 'comic-ai-session';
+const API_ORIGIN = new URL(API_BASE_URL, window.location.origin).origin;
 
 async function request(path, { method = 'GET', token, body } = {}) {
   const headers = {
@@ -43,6 +44,14 @@ export function clearStoredSession() {
   localStorage.removeItem(SESSION_KEY);
 }
 
+export function resolveBackendFileUrl(filePointer) {
+  if (!filePointer || filePointer.startsWith('data:')) {
+    return filePointer;
+  }
+
+  return new URL(filePointer, API_ORIGIN).toString();
+}
+
 export const authApi = {
   register: ({ name, email, password }) =>
     request('/auth/register', {
@@ -65,10 +74,19 @@ export const comicsApi = {
   getByOwnerUuid: (ownerUuid, token) =>
     request(`/comics/${encodeURIComponent(ownerUuid)}`, { token }),
 
-  create: ({ imageUrl, name, description }, token) =>
+  create: ({ imageUrls, name, description }, token) =>
     request('/comics', {
       method: 'POST',
       token,
-      body: { imageUrl, name, description },
+      body: { imageUrls, name, description },
+    }),
+};
+
+export const uploadsApi = {
+  uploadComicImages: (imageDataUrls, token) =>
+    request('/uploads/comic-images', {
+      method: 'POST',
+      token,
+      body: { imageDataUrls },
     }),
 };

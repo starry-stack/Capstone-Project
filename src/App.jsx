@@ -1,17 +1,19 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useAuth } from './hooks/useAuth';
 import { useComicGenerator } from './hooks/useComicGenerator';
-import { comicsApi } from './services/backend';
-import AccountPanel from './components/AccountPanel';
-import StoryInput from './components/StoryInput';
-import ComicGrid from './components/ComicGrid';
-import LoadingScreen from './components/LoadingScreen';
-import DownloadButton from './components/DownloadButton';
+import { comicsApi, uploadsApi } from './services/backend';
+import CreateComicPage from './pages/CreateComicPage';
+import ProfilePage from './pages/ProfilePage';
+
+function getRouteFromHash() {
+  return window.location.hash === '#/profile' ? 'profile' : 'create';
+}
 
 export default function App() {
   const auth = useAuth();
   const { panels, loading, currentPanel, totalPanels, error, done, generate, reset } = useComicGenerator();
   const comicRef = useRef(null);
+  const [route, setRoute] = useState(getRouteFromHash);
 
   const [myComics, setMyComics] = useState([]);
   const [profileComics, setProfileComics] = useState([]);
@@ -20,7 +22,12 @@ export default function App() {
   const [libraryError, setLibraryError] = useState(null);
   const [postStatus, setPostStatus] = useState(null);
 
-  const hasContent = panels.length > 0;
+  useEffect(() => {
+    const handleHashChange = () => setRoute(getRouteFromHash());
+
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
 
   const refreshMyComics = useCallback(async () => {
     if (!auth.token) {
@@ -82,17 +89,22 @@ export default function App() {
       return;
     }
 
-    if (!generatedComic.imageUrl) {
+    if (!generatedComic.imageDataUrls?.length) {
       setPostStatus({
         type: 'error',
-        message: 'Comic generated, but no image was available to post.',
+        message: 'Comic generated, but no images were available to upload.',
       });
       return;
     }
 
     try {
+      const uploadResult = await uploadsApi.uploadComicImages(
+        generatedComic.imageDataUrls,
+        auth.token
+      );
+
       const savedComic = await comicsApi.create({
-        imageUrl: generatedComic.imageUrl,
+        imageUrls: uploadResult.urls,
         name: generatedComic.name,
         description: generatedComic.description,
       }, auth.token);
@@ -113,92 +125,53 @@ export default function App() {
     }
   }, [auth.token, generate]);
 
-  const storyDisabled = auth.loading;
-  const storyDisabledMessage = 'CHECKING PROFILE...';
-
   return (
     <div className="app">
       <header className="site-header">
         <div className="header-inner">
-          <div className="logo-area">
+          <a className="logo-area" href="#/" aria-label="Comic AI home">
             <span className="logo-icon">COMIC</span>
             <div>
               <h1 className="site-title">COMIC-AI</h1>
               <p className="site-tagline">Turn any story into a comic book</p>
             </div>
-          </div>
-          <div className="header-badges">
-            <span className="header-badge">STORY</span>
-            <span className="header-badge red">PANELS</span>
-          </div>
+          </a>
+          <nav className="header-nav" aria-label="Primary navigation">
+            <a className={`header-nav-link ${route === 'create' ? 'active' : ''}`} href="#/">
+              Create
+            </a>
+            <a className={`header-nav-link ${route === 'profile' ? 'active' : ''}`} href="#/profile">
+              {auth.isAuthenticated ? 'Profile' : 'Sign In'}
+            </a>
+          </nav>
         </div>
       </header>
 
       <main className="main-content">
-        <AccountPanel
-          auth={auth}
-          myComics={myComics}
-          myComicsLoading={myComicsLoading}
-          profileComics={profileComics}
-          profileComicsLoading={profileComicsLoading}
-          onLoadProfileComics={loadProfileComics}
-        />
-
-        {libraryError && (
-          <div className="status-banner error" role="alert">
-            <strong>Profile request failed:</strong> {libraryError}
-          </div>
-        )}
-
-        {!auth.isAuthenticated && !auth.loading && (
-          <div className="status-banner info" role="status">
-            You can generate comics as a guest. Create an account to save them to your profile and share them with other users.
-          </div>
-        )}
-
-        {!done && (
-          <StoryInput
-            onGenerate={handleGenerate}
-            loading={loading}
-            disabled={storyDisabled}
-            disabledMessage={storyDisabledMessage}
+        {route === 'profile' ? (
+          <ProfilePage
+            auth={auth}
+            libraryError={libraryError}
+            myComics={myComics}
+            myComicsLoading={myComicsLoading}
+            profileComics={profileComics}
+            profileComicsLoading={profileComicsLoading}
+            onLoadProfileComics={loadProfileComics}
           />
-        )}
-
-        {loading && (
-          <LoadingScreen currentPanel={currentPanel} totalPanels={totalPanels} />
-        )}
-
-        {error && (
-          <div className="error-banner" role="alert">
-            <strong>Something went wrong:</strong> {error}
-            <button className="error-retry" onClick={reset}>Try Again</button>
-          </div>
-        )}
-
-        {postStatus && (
-          <div className={`status-banner ${postStatus.type}`} role="status">
-            {postStatus.message}
-          </div>
-        )}
-
-        {hasContent && (
-          <>
-            <div className="comic-section-header">
-              <span className="badge green">PREVIEW</span>
-              <h2 className="section-title">Your Comic</h2>
-            </div>
-
-            <ComicGrid
-              ref={comicRef}
-              panels={panels}
-              totalPanels={totalPanels}
-            />
-
-            {done && (
-              <DownloadButton comicRef={comicRef} onReset={reset} />
-            )}
-          </>
+        ) : (
+          <CreateComicPage
+            auth={auth}
+            comicRef={comicRef}
+            currentPanel={currentPanel}
+            done={done}
+            error={error}
+            loading={loading}
+            onGenerate={handleGenerate}
+            panels={panels}
+            postStatus={postStatus}
+            reset={reset}
+            totalPanels={totalPanels}
+          />
         )}
       </main>
 
@@ -236,6 +209,8 @@ export default function App() {
           display: flex;
           align-items: center;
           gap: 0.75rem;
+          color: inherit;
+          text-decoration: none;
         }
 
         .logo-icon {
@@ -270,24 +245,30 @@ export default function App() {
           letter-spacing: 1px;
         }
 
-        .header-badges {
+        .header-nav {
           display: flex;
           gap: 0.5rem;
+          align-items: center;
         }
 
-        .header-badge {
+        .header-nav-link {
           font-family: var(--font-display);
-          font-size: 0.85rem;
+          font-size: 1rem;
           letter-spacing: 1px;
-          padding: 4px 10px;
-          background: var(--blue);
-          color: white;
+          padding: 7px 12px;
+          background: white;
+          color: var(--ink);
           border: 2px solid var(--yellow);
           border-radius: 2px;
+          text-decoration: none;
+          box-shadow: 3px 3px 0 var(--red);
+          transition: all 0.15s;
         }
 
-        .header-badge.red {
-          background: var(--red);
+        .header-nav-link:hover,
+        .header-nav-link.active {
+          background: var(--yellow);
+          transform: translate(-1px, -1px);
         }
 
         .main-content {

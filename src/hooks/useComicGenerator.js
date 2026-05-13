@@ -55,7 +55,9 @@ export function useComicGenerator() {
       return {
         ...metadata,
         panels: completedPanels,
-        imageUrl: completedPanels[0]?.imageUrl,
+        imageDataUrls: completedPanels
+          .map(panel => panel.imageUrl)
+          .filter(Boolean),
       };
 
     } catch (err) {

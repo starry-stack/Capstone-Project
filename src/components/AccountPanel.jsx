@@ -1,26 +1,89 @@
 import React, { useState } from 'react';
+import { resolveBackendFileUrl } from '../services/backend';
 
-function ComicList({ title, comics, emptyText }) {
+function getComicImages(comic) {
+  if (Array.isArray(comic.url)) {
+    return comic.url.map(resolveBackendFileUrl);
+  }
+
+  return comic.url ? [resolveBackendFileUrl(comic.url)] : [];
+}
+
+function ComicList({ title, comics, emptyText, onSelectComic }) {
   return (
     <div className="comic-list-block">
       <h3 className="account-subtitle">{title}</h3>
       {comics.length > 0 ? (
         <div className="profile-comics">
-          {comics.map(comic => (
-            <article className="profile-comic-card" key={comic.uuid || comic._id}>
-              {comic.url && (
-                <img className="profile-comic-image" src={comic.url} alt={comic.name} />
-              )}
-              <div className="profile-comic-copy">
-                <h4>{comic.name}</h4>
-                <p>{comic.description}</p>
-              </div>
-            </article>
-          ))}
+          {comics.map(comic => {
+            const images = getComicImages(comic);
+            const coverImage = images[0];
+
+            return (
+              <button
+                className="profile-comic-card"
+                key={comic.uuid || comic._id}
+                type="button"
+                onClick={() => onSelectComic(comic)}
+              >
+                {coverImage && (
+                  <img className="profile-comic-image" src={coverImage} alt={comic.name} />
+                )}
+                <div className="profile-comic-copy">
+                  <h4>{comic.name}</h4>
+                  <p>{comic.description}</p>
+                  <span className="profile-panel-count">
+                    {images.length} {images.length === 1 ? 'panel' : 'panels'}
+                  </span>
+                </div>
+              </button>
+            );
+          })}
         </div>
       ) : (
         <p className="account-muted">{emptyText}</p>
       )}
+    </div>
+  );
+}
+
+function ComicPreviewDialog({ comic, onClose }) {
+  if (!comic) {
+    return null;
+  }
+
+  const images = getComicImages(comic);
+
+  return (
+    <div className="preview-backdrop" role="presentation" onClick={onClose}>
+      <section
+        className="comic-preview-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="comic-preview-title"
+        onClick={event => event.stopPropagation()}
+      >
+        <div className="preview-header">
+          <div>
+            <span className="badge">PREVIEW</span>
+            <h3 className="preview-title" id="comic-preview-title">{comic.name}</h3>
+          </div>
+          <button className="preview-close-btn" type="button" onClick={onClose} aria-label="Close preview">
+            CLOSE
+          </button>
+        </div>
+
+        <p className="preview-description">{comic.description}</p>
+
+        <div className="preview-panels">
+          {images.map((imageUrl, index) => (
+            <figure className="preview-panel" key={`${comic.uuid || comic._id}-panel-${index}`}>
+              <div className="preview-panel-number">{index + 1}</div>
+              <img src={imageUrl} alt={`${comic.name} panel ${index + 1}`} />
+            </figure>
+          ))}
+        </div>
+      </section>
     </div>
   );
 }
@@ -41,6 +104,7 @@ export default function AccountPanel({
   });
   const [ownerUuid, setOwnerUuid] = useState('');
   const [formError, setFormError] = useState(null);
+  const [selectedComic, setSelectedComic] = useState(null);
 
   const updateForm = (field, value) => {
     setForm(prev => ({ ...prev, [field]: value }));
@@ -200,13 +264,20 @@ export default function AccountPanel({
           title="Your Comics"
           comics={myComics}
           emptyText={myComicsLoading ? 'Loading comics...' : 'No comics posted yet.'}
+          onSelectComic={setSelectedComic}
         />
         <ComicList
           title="Profile Comics"
           comics={profileComics}
           emptyText={profileComicsLoading ? 'Loading comics...' : 'Enter a UUID to view public comics.'}
+          onSelectComic={setSelectedComic}
         />
       </div>
+
+      <ComicPreviewDialog
+        comic={selectedComic}
+        onClose={() => setSelectedComic(null)}
+      />
 
       <style>{accountPanelStyles}</style>
     </section>
@@ -416,6 +487,17 @@ const accountPanelStyles = `
     border: 2px solid var(--ink);
     border-radius: var(--radius);
     padding: 0.65rem;
+    width: 100%;
+    cursor: pointer;
+    text-align: left;
+    font-family: inherit;
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+
+  .profile-comic-card:hover,
+  .profile-comic-card:focus-visible {
+    box-shadow: 3px 3px 0 var(--ink);
+    transform: translate(-1px, -1px);
   }
 
   .profile-comic-image {
@@ -447,9 +529,137 @@ const accountPanelStyles = `
     color: #555;
   }
 
+  .profile-panel-count {
+    display: inline-block;
+    margin-top: 0.4rem;
+    font-family: var(--font-display);
+    font-size: 0.8rem;
+    letter-spacing: 1px;
+    color: var(--blue);
+  }
+
+  .preview-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 300;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    background: rgba(13, 13, 13, 0.72);
+  }
+
+  .comic-preview-dialog {
+    width: min(980px, 100%);
+    max-height: min(86vh, 900px);
+    overflow: auto;
+    background: var(--paper);
+    border: 4px solid var(--ink);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-lg);
+    padding: 1.25rem;
+  }
+
+  .preview-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .preview-title {
+    margin-top: 0.5rem;
+    font-family: var(--font-display);
+    font-size: 2rem;
+    letter-spacing: 2px;
+    color: var(--ink);
+  }
+
+  .preview-close-btn {
+    background: var(--red);
+    color: white;
+    border: 3px solid var(--ink);
+    border-radius: var(--radius);
+    box-shadow: 3px 3px 0 var(--ink);
+    padding: 0.55rem 0.85rem;
+    font-family: var(--font-display);
+    letter-spacing: 1px;
+  }
+
+  .preview-close-btn:hover {
+    background: var(--ink);
+  }
+
+  .preview-description {
+    max-width: 760px;
+    margin-bottom: 1rem;
+    font-family: var(--font-body);
+    font-weight: 700;
+    line-height: 1.45;
+    color: #444;
+  }
+
+  .preview-panels {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1rem;
+  }
+
+  .preview-panel {
+    position: relative;
+    overflow: hidden;
+    background: white;
+    border: 3px solid var(--ink);
+    box-shadow: var(--shadow);
+  }
+
+  .preview-panel img {
+    display: block;
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    object-fit: cover;
+  }
+
+  .preview-panel-number {
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    z-index: 1;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--yellow);
+    color: var(--ink);
+    border: 2px solid var(--ink);
+    border-radius: 50%;
+    font-family: var(--font-display);
+  }
+
   @media (max-width: 820px) {
     .profile-grid,
     .profile-library-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .preview-panels {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 560px) {
+    .preview-backdrop {
+      padding: 0.75rem;
+      align-items: flex-start;
+    }
+
+    .preview-header {
+      flex-direction: column;
+    }
+
+    .preview-panels {
       grid-template-columns: 1fr;
     }
   }

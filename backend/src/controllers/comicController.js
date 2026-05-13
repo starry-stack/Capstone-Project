@@ -22,11 +22,22 @@ exports.getComics = async (req, res, next) => {
 
 exports.createComic = async (req, res, next) => {
   try {
-    const { imageUrl, url, name, description } = req.body;
-    const comicUrl = imageUrl || url;
+    const { imageUrl, imageUrls, url, name, description } = req.body;
+    const rawComicUrls = imageUrls || url || imageUrl;
+    const comicUrls = Array.isArray(rawComicUrls)
+      ? rawComicUrls.filter(Boolean)
+      : rawComicUrls
+        ? [rawComicUrls]
+        : [];
 
-    if (!comicUrl || !name || !description) {
-      const error = new Error('Image URL, name, and description are required');
+    if (comicUrls.length === 0 || !name || !description) {
+      const error = new Error('Image URLs, name, and description are required');
+      error.statusCode = 400;
+      return next(error);
+    }
+
+    if (comicUrls.some(url => typeof url !== 'string' || url.startsWith('data:'))) {
+      const error = new Error('Images must be uploaded before creating a comic');
       error.statusCode = 400;
       return next(error);
     }
@@ -36,7 +47,7 @@ exports.createComic = async (req, res, next) => {
       uuid: crypto.randomUUID(),
       description,
       owner: req.user.uuid,
-      url: comicUrl,
+      url: comicUrls,
     });
 
     res.status(201).json({
