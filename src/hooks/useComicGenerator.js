@@ -18,7 +18,7 @@ const INITIAL_STATE = {
 export function useComicGenerator() {
   const [state, setState] = useState(INITIAL_STATE);
 
-  const generate = useCallback(async (story, panelCount, style) => {
+  const generate = useCallback(async (story, panelCount, style, metadata = {}) => {
     setState({ ...INITIAL_STATE, loading: true, totalPanels: panelCount });
 
     try {
@@ -52,12 +52,20 @@ export function useComicGenerator() {
         currentPanel: panelData.length,
       }));
 
+      return {
+        ...metadata,
+        panels: completedPanels,
+        imageUrl: completedPanels[0]?.imageUrl,
+      };
+
     } catch (err) {
       setState(prev => ({
         ...prev,
         loading: false,
         error: err.message || 'Something went wrong. Please try again.',
       }));
+
+      return null;
     }
   }, []);
 

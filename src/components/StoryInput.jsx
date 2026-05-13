@@ -1,44 +1,56 @@
-import React from "react"
-// ============================================================
-// src/components/StoryInput.jsx
-// Story entry form: textarea, panel count, art style, generate button.
-// ============================================================
-
-import { useState } from 'react';
+import React, { useState } from 'react';
 
 const STYLES = [
-  { value: 'classic American comic book', label: '🦸 Superhero' },
-  { value: 'manga black and white', label: '⛩️ Manga' },
-  { value: 'retro 1950s pulp comic', label: '📰 Retro Pulp' },
-  { value: 'whimsical childrens comic', label: '🌈 Kids Comic' },
-  { value: 'dark noir graphic novel', label: '🌑 Noir' },
+  { value: 'classic American comic book', label: 'Superhero' },
+  { value: 'manga black and white', label: 'Manga' },
+  { value: 'retro 1950s pulp comic', label: 'Retro Pulp' },
+  { value: 'whimsical childrens comic', label: 'Kids Comic' },
+  { value: 'dark noir graphic novel', label: 'Noir' },
 ];
 
 const PANEL_COUNTS = [4, 6, 8];
 
-const PLACEHOLDER = `Once upon a time, in a city that never slept, a young inventor stumbled upon an ancient map hidden beneath the floorboards of her workshop. The map pointed to a forgotten library buried deep underground — a place that held the secrets of a civilization lost to time. Armed with her tools and boundless curiosity, she descended into the dark, unaware that she was not alone...`;
+const PLACEHOLDER = `Once upon a time, in a city that never slept, a young inventor stumbled upon an ancient map hidden beneath the floorboards of her workshop. The map pointed to a forgotten library buried deep underground - a place that held the secrets of a civilization lost to time. Armed with her tools and boundless curiosity, she descended into the dark, unaware that she was not alone...`;
 
-export default function StoryInput({ onGenerate, loading }) {
+export default function StoryInput({
+  onGenerate,
+  loading,
+  disabled = false,
+  disabledMessage = 'GENERATE COMIC',
+}) {
   const [story, setStory] = useState('');
+  const [comicName, setComicName] = useState('');
   const [panelCount, setPanelCount] = useState(4);
   const [style, setStyle] = useState(STYLES[0].value);
+  const controlsDisabled = loading || disabled;
+
+  const createFallbackName = (value) => {
+    const words = value.split(/\s+/).slice(0, 6).join(' ');
+    return words ? `${words}...` : 'Untitled Comic';
+  };
 
   const handleSubmit = () => {
     const trimmed = story.trim();
+    const name = comicName.trim() || createFallbackName(trimmed);
+
     if (!trimmed) {
       alert('Please enter a story first!');
       return;
     }
+
     if (trimmed.split(' ').length < 10) {
       alert('Your story is a little short. Add more detail for better results!');
       return;
     }
-    onGenerate(trimmed, panelCount, style);
+
+    onGenerate(trimmed, panelCount, style, {
+      name,
+      description: trimmed,
+    });
   };
 
   return (
     <div className="input-card">
-      {/* Header badge */}
       <div className="input-header">
         <span className="badge">STEP 1</span>
         <h2 className="input-title">Write Your Story</h2>
@@ -47,10 +59,10 @@ export default function StoryInput({ onGenerate, loading }) {
       <textarea
         className="story-textarea"
         value={story}
-        onChange={e => setStory(e.target.value)}
+        onChange={event => setStory(event.target.value)}
         placeholder={PLACEHOLDER}
         rows={7}
-        disabled={loading}
+        disabled={controlsDisabled}
         maxLength={3000}
         aria-label="Enter your story"
       />
@@ -59,19 +71,30 @@ export default function StoryInput({ onGenerate, loading }) {
         {story.length} / 3000 characters
       </div>
 
-      {/* Options row */}
+      <label className="comic-name-field">
+        <span>COMIC NAME</span>
+        <input
+          value={comicName}
+          onChange={event => setComicName(event.target.value)}
+          placeholder="The Lost Library"
+          disabled={controlsDisabled}
+          maxLength={80}
+        />
+      </label>
+
       <div className="options-row">
         <div className="option-group">
           <label className="option-label">PANELS</label>
           <div className="panel-count-buttons">
-            {PANEL_COUNTS.map(n => (
+            {PANEL_COUNTS.map(count => (
               <button
-                key={n}
-                className={`count-btn ${panelCount === n ? 'active' : ''}`}
-                onClick={() => setPanelCount(n)}
-                disabled={loading}
+                key={count}
+                className={`count-btn ${panelCount === count ? 'active' : ''}`}
+                onClick={() => setPanelCount(count)}
+                disabled={controlsDisabled}
+                type="button"
               >
-                {n}
+                {count}
               </button>
             ))}
           </div>
@@ -82,11 +105,13 @@ export default function StoryInput({ onGenerate, loading }) {
           <select
             className="style-select"
             value={style}
-            onChange={e => setStyle(e.target.value)}
-            disabled={loading}
+            onChange={event => setStyle(event.target.value)}
+            disabled={controlsDisabled}
           >
-            {STYLES.map(s => (
-              <option key={s.value} value={s.value}>{s.label}</option>
+            {STYLES.map(styleOption => (
+              <option key={styleOption.value} value={styleOption.value}>
+                {styleOption.label}
+              </option>
             ))}
           </select>
         </div>
@@ -95,9 +120,10 @@ export default function StoryInput({ onGenerate, loading }) {
       <button
         className="generate-btn"
         onClick={handleSubmit}
-        disabled={loading}
+        disabled={controlsDisabled}
+        type="button"
       >
-        {loading ? '⚡ GENERATING...' : '⚡ GENERATE COMIC'}
+        {loading ? 'GENERATING...' : disabled ? disabledMessage : 'GENERATE COMIC'}
       </button>
 
       <style>{`
@@ -166,8 +192,41 @@ export default function StoryInput({ onGenerate, loading }) {
           font-size: 0.78rem;
           color: #888;
           margin-top: 0.25rem;
-          margin-bottom: 1.25rem;
+          margin-bottom: 0.9rem;
           font-family: var(--font-body);
+        }
+
+        .comic-name-field {
+          display: flex;
+          flex-direction: column;
+          gap: 0.45rem;
+          margin-bottom: 1.25rem;
+          font-family: var(--font-display);
+          font-size: 0.85rem;
+          letter-spacing: 2px;
+          color: #555;
+        }
+
+        .comic-name-field input {
+          min-height: 44px;
+          border: 3px solid var(--ink);
+          border-radius: var(--radius);
+          padding: 0 0.85rem;
+          font-family: var(--font-body);
+          font-size: 1rem;
+          background: var(--paper);
+          color: var(--ink);
+        }
+
+        .comic-name-field input:focus {
+          outline: none;
+          border-color: var(--blue);
+          box-shadow: 3px 3px 0 var(--blue);
+        }
+
+        .comic-name-field input:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
         }
 
         .options-row {
