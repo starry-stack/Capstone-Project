@@ -17,6 +17,14 @@ function getComicCaptions(comic) {
   return comic.caption ? [comic.caption] : [];
 }
 
+function getComicDialogues(comic) {
+  if (Array.isArray(comic.dialogue)) {
+    return comic.dialogue;
+  }
+
+  return comic.dialogue ? [comic.dialogue] : [];
+}
+
 function ComicList({ title, comics, emptyText, onSelectComic }) {
   return (
     <div className="comic-list-block">
@@ -62,6 +70,7 @@ function ComicPreviewDialog({ comic, onClose }) {
 
   const images = getComicImages(comic);
   const captions = getComicCaptions(comic);
+  const dialogues = getComicDialogues(comic);
 
   return (
     <div className="preview-backdrop" role="presentation" onClick={onClose}>
@@ -88,6 +97,11 @@ function ComicPreviewDialog({ comic, onClose }) {
           {images.map((imageUrl, index) => (
             <figure className="preview-panel" key={`${comic.uuid || comic._id}-panel-${index}`}>
               <div className="preview-panel-number">{index + 1}</div>
+              {dialogues[index] && (
+                <div className="preview-dialogue-bubble" aria-label="dialogue">
+                  {dialogues[index]}
+                </div>
+              )}
               <img src={imageUrl} alt={`${comic.name} panel ${index + 1}`} />
               {captions[index] && (
                 <figcaption>{captions[index]}</figcaption>
@@ -642,6 +656,43 @@ const accountPanelStyles = `
     font-size: 0.9rem;
     line-height: 1.35;
     color: var(--ink);
+  }
+
+  .preview-dialogue-bubble {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 2;
+    max-width: 58%;
+    background: white;
+    border: 2px solid var(--ink);
+    border-radius: 16px;
+    box-shadow: 2px 2px 0 var(--ink);
+    padding: 6px 10px;
+    font-family: var(--font-body);
+    font-weight: 700;
+    font-size: 0.78rem;
+    line-height: 1.3;
+    color: var(--ink);
+  }
+
+  .preview-dialogue-bubble::after {
+    content: '';
+    position: absolute;
+    bottom: -10px;
+    left: 16px;
+    border: 5px solid transparent;
+    border-top-color: var(--ink);
+  }
+
+  .preview-dialogue-bubble::before {
+    content: '';
+    position: absolute;
+    bottom: -7px;
+    left: 17px;
+    z-index: 1;
+    border: 4px solid transparent;
+    border-top-color: white;
   }
 
   .preview-panel-number {

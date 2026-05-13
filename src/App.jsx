@@ -106,6 +106,7 @@ export default function App() {
       const savedComic = await comicsApi.create({
         imageUrls: uploadResult.urls,
         captions: generatedComic.captions,
+        dialogues: generatedComic.dialogues,
         name: generatedComic.name,
         description: generatedComic.description,
       }, auth.token);

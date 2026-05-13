@@ -56,8 +56,9 @@ export function useComicGenerator() {
         ...metadata,
         panels: completedPanels,
         captions: completedPanels
-          .map(panel => panel.caption)
-          .filter(Boolean),
+          .map(panel => panel.caption || ''),
+        dialogues: completedPanels
+          .map(panel => panel.dialogue || ''),
         imageDataUrls: completedPanels
           .map(panel => panel.imageUrl)
           .filter(Boolean),

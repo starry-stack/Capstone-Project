@@ -28,6 +28,9 @@ const comicSchema = new mongoose.Schema(
     caption: {
       type: Array
     },
+    dialogue: {
+      type: Array
+    },
     privacy: { // false = public, true = private
       type: Boolean,
       default: false 
