@@ -74,11 +74,11 @@ export const comicsApi = {
   getByOwnerUuid: (ownerUuid, token) =>
     request(`/comics/${encodeURIComponent(ownerUuid)}`, { token }),
 
-  create: ({ imageUrls, name, description }, token) =>
+  create: ({ imageUrls, captions, name, description }, token) =>
     request('/comics', {
       method: 'POST',
       token,
-      body: { imageUrls, name, description },
+      body: { imageUrls, captions, name, description },
     }),
 };
 

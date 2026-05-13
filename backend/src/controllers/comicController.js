@@ -22,12 +22,18 @@ exports.getComics = async (req, res, next) => {
 
 exports.createComic = async (req, res, next) => {
   try {
-    const { imageUrl, imageUrls, url, name, description } = req.body;
+    const { imageUrl, imageUrls, url, captions, caption, name, description } = req.body;
     const rawComicUrls = imageUrls || url || imageUrl;
     const comicUrls = Array.isArray(rawComicUrls)
       ? rawComicUrls.filter(Boolean)
       : rawComicUrls
         ? [rawComicUrls]
+        : [];
+    const rawCaptions = captions || caption || [];
+    const comicCaptions = Array.isArray(rawCaptions)
+      ? rawCaptions.filter(Boolean)
+      : rawCaptions
+        ? [rawCaptions]
         : [];
 
     if (comicUrls.length === 0 || !name || !description) {
@@ -48,6 +54,7 @@ exports.createComic = async (req, res, next) => {
       description,
       owner: req.user.uuid,
       url: comicUrls,
+      caption: comicCaptions,
     });
 
     res.status(201).json({

@@ -9,6 +9,14 @@ function getComicImages(comic) {
   return comic.url ? [resolveBackendFileUrl(comic.url)] : [];
 }
 
+function getComicCaptions(comic) {
+  if (Array.isArray(comic.caption)) {
+    return comic.caption;
+  }
+
+  return comic.caption ? [comic.caption] : [];
+}
+
 function ComicList({ title, comics, emptyText, onSelectComic }) {
   return (
     <div className="comic-list-block">
@@ -53,6 +61,7 @@ function ComicPreviewDialog({ comic, onClose }) {
   }
 
   const images = getComicImages(comic);
+  const captions = getComicCaptions(comic);
 
   return (
     <div className="preview-backdrop" role="presentation" onClick={onClose}>
@@ -80,6 +89,9 @@ function ComicPreviewDialog({ comic, onClose }) {
             <figure className="preview-panel" key={`${comic.uuid || comic._id}-panel-${index}`}>
               <div className="preview-panel-number">{index + 1}</div>
               <img src={imageUrl} alt={`${comic.name} panel ${index + 1}`} />
+              {captions[index] && (
+                <figcaption>{captions[index]}</figcaption>
+              )}
             </figure>
           ))}
         </div>
@@ -619,6 +631,17 @@ const accountPanelStyles = `
     width: 100%;
     aspect-ratio: 1 / 1;
     object-fit: cover;
+  }
+
+  .preview-panel figcaption {
+    border-top: 2px solid var(--ink);
+    background: var(--yellow);
+    padding: 0.65rem 0.75rem;
+    font-family: var(--font-body);
+    font-weight: 700;
+    font-size: 0.9rem;
+    line-height: 1.35;
+    color: var(--ink);
   }
 
   .preview-panel-number {

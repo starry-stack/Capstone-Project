@@ -25,6 +25,9 @@ const comicSchema = new mongoose.Schema(
       required: [true, 'URL is required!'],
       select: false,
     },
+    caption: {
+      type: Array
+    },
     privacy: { // false = public, true = private
       type: Boolean,
       default: false 
