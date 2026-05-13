@@ -1,6 +1,7 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const crypto = require('crypto');
 
 const signToken = (userId) => {
   return jwt.sign({ id: userId }, process.env.JWT_SECRET, {
@@ -26,9 +27,11 @@ exports.register = async (req, res, next) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
+    const uuid = await crypto.randomUUID();
 
     const user = await User.create({
       name,
+      uuid: uuid,
       email,
       password: hashedPassword,
     });
@@ -42,6 +45,7 @@ exports.register = async (req, res, next) => {
         user: {
           id: user._id,
           name: user.name,
+          uuid: user.uuid,
           email: user.email,
         },
       },
@@ -84,6 +88,7 @@ exports.login = async (req, res, next) => {
         user: {
           id: user._id,
           name: user.name,
+          uuid: user.uuid,
           email: user.email,
         },
       },

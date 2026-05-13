@@ -7,6 +7,10 @@ const comicSchema = new mongoose.Schema(
       required: [true, 'Name is required!'],
       trim: true,
     },
+    uuid: {
+      type: String,
+      required: true
+    },
     description: {
       type: String,
       required: [true, 'Description is required!'],
@@ -21,6 +25,10 @@ const comicSchema = new mongoose.Schema(
       required: [true, 'URL is required!'],
       select: false,
     },
+    privacy: { // false = public, true = private
+      type: Boolean,
+      default: false 
+    }
   },
   {
     timestamps: true,
